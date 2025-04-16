@@ -8,6 +8,9 @@ from PyQt5.QtWidgets import (
     QPlainTextEdit, QProgressDialog, QFileDialog
 )
 
+TEMPLE_FILE = 'Temple.docx'
+TARGET_PATH = 'D:\Desktop\output.docx'
+
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -41,17 +44,17 @@ class MainWindow(QMainWindow):
         # 获取文本框内的内容
         text = self.editor.toPlainText()
 
-        # ① 删除全文中的窄不换行空格 (Unicode U+202F)
+        # 功能一：删除全文中的窄不换行空格 (Unicode U+202F)
         text = text.replace('\u202f', '')
 
-        # 删除其它特殊标记（例如 cite 相关标记）
+        # 功能二：删除其它特殊标记（例如 cite 相关标记）
         text = re.sub('\ue200.*?\ue201', '', text, flags=re.DOTALL)
         text = text.translate({0xE200: None, 0xE201: None, 0xE202: None})
         # 压缩多余空格与空行
         text = re.sub('[ \t]+\n', '\n', text)  # 清除行尾空格
         text = re.sub('\n{3,}', '\n\n', text)    # 连续 ≥3 行压缩为 2 行
 
-        # 处理数学公式：转换公式环境
+        # 功能三：处理数学公式：转换公式环境
         # 内联公式：\(...\) 转换为 $...$
         pattern_inline = re.compile(r'\\\(\s*(.*?)\s*\\\)')
         text = pattern_inline.sub(lambda m: '$' + m.group(1).strip() + '$', text)
@@ -59,6 +62,7 @@ class MainWindow(QMainWindow):
         pattern_display = re.compile(r'\\\[\s*(.*?)\s*\\\]', re.DOTALL)
         text = pattern_display.sub(lambda m: '$$' + m.group(1).strip() + '$$', text)
 
+        # 功能四（仅限Word模版中已链接编号）
         # 删除 Markdown 标题行中的编号
         pattern_title = re.compile(
             r'^(\s*#+\s*)((?:(?:\d+(?:\.\d+)*\.?)|(?:[一二三四五六七八九十]+(?:、|[,.，])?))\s*)',
@@ -66,7 +70,7 @@ class MainWindow(QMainWindow):
         )
         text = pattern_title.sub(r'\1', text)
 
-        # 移除仅包含 --- 的分隔行
+        # 功能五：移除仅包含 --- 的分隔行
         lines = text.splitlines()
         filtered_lines = [line for line in lines if not re.match(r'^\s*---\s*$', line)]
         text = "\n".join(filtered_lines)
@@ -90,17 +94,17 @@ class MainWindow(QMainWindow):
         # ------------------------------
         # 2. 调用 pandoc 命令转换为 DOCX 文件
         # 命令格式：
-        # pandoc 临时文件路径 -o D:\Desktop\output.docx --reference-doc=Doc11.docx
+        # pandoc 临时文件路径 -o D:\Desktop\output.docx --reference-doc=TEMPLE_FILE
         # ------------------------------
-        # 假设 Doc11.docx 与 exe 文件在同一目录
-        ref_doc_path = os.path.join(os.path.dirname(sys.executable), "Doc11.docx") if getattr(sys, 'frozen',
-                                                                                              False) else "Doc11.docx"
+        # TEMPLE_FILE 与 exe 文件在同一目录
+        ref_doc_path = os.path.join(os.path.dirname(sys.executable), TEMPLE_FILE) if getattr(sys, 'frozen',
+                                                                                              False) else TEMPLE_FILE
         pandoc_command = [
             'pandoc',
             temp_path,
             '-o',
-            r'D:\Desktop\output.docx',
-            f'--reference-doc={ref_doc_path}'
+            f'{TARGET_PATH}',
+            f'--reference-doc={TEMPLE_FILE}'
         ]
         try:
             subprocess.run(
