@@ -8,8 +8,24 @@ from PyQt5.QtWidgets import (
     QPlainTextEdit, QProgressDialog, QFileDialog
 )
 
-TEMPLE_FILE = 'Temple.docx'
-TARGET_PATH = 'D:\Desktop\output.docx'
+def get_app_dir():
+    """
+    获取应用所在目录：
+    如果是打包后的独立 exe（onefile 模式），通过 sys.argv[0] 获取原始 exe 的目录，
+    否则返回当前脚本所在目录。
+    """
+    if getattr(sys, 'frozen', False):
+        # 对于打包后，不使用 sys._MEIPASS，而是使用 sys.argv[0] 所在目录
+        return os.path.dirname(sys.argv[0])
+    else:
+        return os.path.abspath(".")
+
+
+APP_DIR = get_app_dir()
+TEMPLE_FILE = os.path.join(APP_DIR, 'Temple.docx')
+PANDOC_EXE = os.path.join(APP_DIR, 'pandoc-3.6.4', 'pandoc.exe')
+TARGET_PATH = os.path.join(APP_DIR, 'output.docx')
+
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -99,8 +115,9 @@ class MainWindow(QMainWindow):
         # TEMPLE_FILE 与 exe 文件在同一目录
         ref_doc_path = os.path.join(os.path.dirname(sys.executable), TEMPLE_FILE) if getattr(sys, 'frozen',
                                                                                               False) else TEMPLE_FILE
+
         pandoc_command = [
-            'pandoc',
+            PANDOC_EXE,
             temp_path,
             '-o',
             f'{TARGET_PATH}',
