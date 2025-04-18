@@ -1,4 +1,4 @@
-# pandoc_plus
+# GPT_to_Doc
 Requirement: Pandoc(https://github.com/jgm/pandoc/releases/download/3.6.4/pandoc-3.6.4-windows-x86_64.msi)
 This is a simple UI to copy context from ChatGPT directly to Word.
 How to use:
