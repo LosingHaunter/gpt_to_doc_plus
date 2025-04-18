@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/pandoc_plus.iml" filepath="$PROJECT_DIR$/.idea/pandoc_plus.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/gpt_to_doc_plus.iml" filepath="$PROJECT_DIR$/.idea/gpt_to_doc_plus.iml" />
     </modules>
   </component>
 </project>
