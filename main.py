@@ -3,16 +3,18 @@ import re
 import os
 import subprocess
 import tempfile
+import shutil  # 用于检测 Pandoc 可用性
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QVBoxLayout, QHBoxLayout, QWidget,
     QPushButton, QPlainTextEdit, QProgressDialog, QFileDialog,
-    QDialog, QLineEdit, QDialogButtonBox, QLabel, QGridLayout
+    QDialog, QLineEdit, QDialogButtonBox, QLabel, QGridLayout, QMessageBox
 )
 from PyQt5.QtCore import QSettings  # 修正：从 QtCore 导入 QSettings
 
 DEFAULT_TEMPLATE = 'Temple.docx'
 ORGANIZATION = 'YmY'
 APPLICATION = 'GPT_to_Doc_PLUS'
+
 
 def get_app_dir():
     """
@@ -28,6 +30,7 @@ def get_app_dir():
 
 APP_DIR = get_app_dir()
 PANDOC_CMD = 'pandoc'
+
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -110,12 +113,20 @@ class MainWindow(QMainWindow):
         dialog.exec_()
 
     def _choose_file(self, label, filter_str):
-        path, _ = QFileDialog.getOpenFileName(self, "选择文件", APP_DIR, filter_str)
+        try:
+            path, _ = QFileDialog.getOpenFileName(self, "选择文件", APP_DIR, filter_str)
+        except Exception as e:
+            QMessageBox.critical(self, "文件选择错误", f"无法打开文件选择对话框：{e}")
+            return
         if path:
             label.setText(path)
 
     def _choose_dir(self, label):
-        path = QFileDialog.getExistingDirectory(self, "选择目录", APP_DIR)
+        try:
+            path = QFileDialog.getExistingDirectory(self, "选择目录", APP_DIR)
+        except Exception as e:
+            QMessageBox.critical(self, "目录选择错误", f"无法打开目录选择对话框：{e}")
+            return
         if path:
             label.setText(path)
 
@@ -138,8 +149,27 @@ class MainWindow(QMainWindow):
         progress.setValue(0)
         QApplication.processEvents()  # 刷新界面
 
-        # 获取文本框内的内容
-        text = self.editor.toPlainText()
+        # 检查必备条件：模板、Pandoc、输出目录
+        if not os.path.isfile(self.template_file):
+            QMessageBox.critical(self, "模板文件错误", f"模板文件不存在：{self.template_file}")
+            progress.close()
+            return
+        if shutil.which(PANDOC_CMD) is None:
+            QMessageBox.critical(self, "Pandoc 未找到", f"未找到 pandoc 可执行文件：{PANDOC_CMD}")
+            progress.close()
+            return
+        if not os.path.isdir(self.output_dir):
+            QMessageBox.critical(self, "输出目录错误", f"输出目录不存在：{self.output_dir}")
+            progress.close()
+            return
+
+        try:
+            # 获取文本框内的内容
+            text = self.editor.toPlainText()
+        except Exception as e:
+            QMessageBox.critical(self, "文本获取错误", f"无法读取文本内容：{e}")
+            progress.close()
+            return
 
         # 功能一：删除全文中的窄不换行空格 (Unicode U+202F)
         text = text.replace('\u202f', '')
